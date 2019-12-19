@@ -6,6 +6,8 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
+    "clean-css": "4.1.11",
+    "constantinople": "3.1.1",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "eslint": "5.16.0",
@@ -18,6 +20,7 @@
     "morgan": "~1.9.1",
     "mysql": "^2.17.1",
     "nodemon": "^2.0.2",
-    "promise-mysql": "^4.1.1"
+    "promise-mysql": "^4.1.1",
+    "uglify-js": "2.6.0"
   }
 }
