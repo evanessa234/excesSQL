@@ -3,8 +3,21 @@ const db = require('../dbConnection');
 
 const router = express.Router();
 
-/* Fetching endpoints */
 
+
+/**
+ * API module
+ * @module routes/api
+ * base URL: /api
+ */
+
+
+/**
+ * Fetch all messages
+ * type: GET
+ * query params = []
+ * URL: /message/fetch/all
+ */
 router.get('/message/fetch/all', async (req, res) => {
   const conn = await db();
   try {
@@ -23,14 +36,46 @@ router.get('/message/fetch/all', async (req, res) => {
   }
 });
 
-router.get('/message/fetch/student/:roll', async (req, res) => {
+
+
+/**
+ * Fetch all message history
+ * type: GET
+ * query params = []
+ * URL: /message/history/:sdrn
+ */
+router.get('/message/history/:sdrn', async (req, res) => {
+  const conn = await db();
+  try {
+    await conn.query('START TRANSACTION');
+    const result = await conn.query('select * from `recieved` where `by` = ?', [req.params.sdrn]);
+    res.status(200).json({
+      result,
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: err,
+    });
+  } finally {
+    await conn.release();
+    await conn.destroy();
+  }
+});
+
+/**
+ * Fetch messages for respective `identification` and `roll number` || `sdrn`
+ * type: GET
+ * query params = []
+ * URL: /message/fetch/:identification/:(roll or sdrn)
+ */
+router.get('/message/fetch/:identification/:roll', async (req, res) => {
   const conn = await db();
   try {
     await conn.query('START TRANSACTION');
     let result;
     if (req.params.roll === 'all') {
       result = await conn.query(
-        "select * from `recieved` where  `identification`='student'",
+        "select * from `recieved` where  `identification`=?", [req.param.identification]
       );
     } else {
       result = await conn.query(
@@ -51,39 +96,20 @@ router.get('/message/fetch/student/:roll', async (req, res) => {
   }
 });
 
-router.get('/message/fetch/faculty/:sdrn', async (req, res) => {
-  const conn = await db();
-  try {
-    await conn.query('START TRANSACTION');
-    let result;
-    if (req.params.sdrn === 'all') {
-      result = await conn.query(
-        "select * from `recieved` where  `identification`='faculty'",
-      );
-    } else {
-      result = await conn.query(
-        `select * from \`recieved\` where \`to\` = '${req.params.sdrn}'`,
-      );
-    }
+/**
+ * send message to respective `identification` and `roll number` || `sdrn`
+ * type: POST
+ * query params = {
+ * by: 'by (SDRN)',
+ * to: to (roll) or (sdrn)',
+ * message: 'message to be sent',
+ * role: 'role of the user that sent it, can be [faculty, admin, HOD]',
+ * }
+ * 
+ * URL: /message/send/:identification/individual
+ */
 
-    res.status(200).json({
-      result,
-    });
-  } catch (err) {
-    res.status(500).json({
-      error: err,
-    });
-  } finally {
-    await conn.release();
-    await conn.destroy();
-  }
-});
-
-
-// sending endpoints
-// id by to type message timestamp role
-
-router.post('/message/send/student/individual', async (req, res) => {
+router.post('/message/send/:identification/individual', async (req, res) => {
   const conn = await db();
   try {
     await conn.query('START TRANSACTION');
@@ -95,7 +121,7 @@ router.post('/message/send/student/individual', async (req, res) => {
         req.body.message,
         'individual',
         req.body.role,
-        'student',
+        req.params.identification,
       ],
     );
     await conn.query('COMMIT');
@@ -112,13 +138,33 @@ router.post('/message/send/student/individual', async (req, res) => {
   }
 });
 
-router.post('/message/send/student/all', async (req, res) => {
+/**
+ * send message to all `identification` 
+ * type: POST
+ * query params = {
+ * by: 'by (SDRN)',
+ * message: 'message to be sent',
+ * role: 'role of the user that sent it, can be [faculty, admin, HOD]',
+ * }
+ * 
+ * URL: /message/send/:identification/all
+ */
+
+router.post('/message/send/:identification/all', async (req, res) => {
   const conn = await db();
+  let type;
+  if (req.params.identification === 'student') {
+    type = "AS";
+  } else if (req.params.identification === 'faculty') {
+    type = "AF";
+  } else {
+    type = req.params.identification;
+  }
   try {
     await conn.query('START TRANSACTION');
     const result = await conn.query(
       'insert into `recieved` (`by`, `to`, `message`, `type`, `role`, `identification`) VALUES (?, ?, ?, ?, ?, ?)',
-      [req.body.by, 'all', req.body.message, 'AS', req.body.role, 'student'],
+      [req.body.by, 'all' + req.params.identification, req.body.message, type, req.body.role, req.params.identification],
     );
     await conn.query('COMMIT');
     res.status(200).json({
@@ -134,14 +180,27 @@ router.post('/message/send/student/all', async (req, res) => {
   }
 });
 
-router.post('/message/send/student/multiple', async (req, res) => {
+
+/**
+ * send message to multiple `identification` and `roll number` || `sdrn`
+ * type: POST
+ * query params = {
+ * by: 'by (SDRN)',
+ * to: to [roll , sdrn] (LIST),
+ * message: 'message to be sent',
+ * role: 'role of the user that sent it, can be [faculty, admin, HOD]',
+ * }
+ * 
+ * URL: /message/send/:identification/multiple
+ */
+router.post('/message/send/:identifiction/multiple', async (req, res) => {
   const conn = await db();
   try {
     await conn.query('START TRANSACTION');
     let query = 'insert into `recieved` (`by`, `to`, `message`, `type`, `role`, `identification`) VALUES ';
     for (let i = 0; i < req.body.to.length; i += 1) {
       // eslint-disable-next-line no-template-curly-in-string
-      query += `('${req.body.by}', '${req.body.to[i]}', '${req.body.message}','multiple', '${req.body.role}','student'), `;
+      query += `('${req.body.by}', '${req.body.to[i]}', '${req.body.message}','multiple', '${req.body.role}','${req.params.identification}'), `;
     }
     query = query.replace(/,\s*$/, '');
     const result = await conn.query(query);
@@ -159,55 +218,4 @@ router.post('/message/send/student/multiple', async (req, res) => {
   }
 });
 
-
-router.post('/message/send/faculty/individual', async (req, res) => {
-  const conn = await db();
-  try {
-    await conn.query('START TRANSACTION');
-    const result = await conn.query(
-      'insert into `recieved` (`by`, `to`, `message`, `type`, `role`, `identification`) VALUES (?, ?, ?, ?, ?, ?)',
-      [
-        req.body.by,
-        req.body.to,
-        req.body.message,
-        'individual',
-        req.body.role,
-        'faculty',
-      ],
-    );
-    await conn.query('COMMIT');
-    res.status(200).json({
-      result,
-    });
-  } catch (err) {
-    res.status(500).json({
-      error: err,
-    });
-  } finally {
-    await conn.release();
-    await conn.destroy();
-  }
-});
-
-router.post('/message/send/faculty/all', async (req, res) => {
-  const conn = await db();
-  try {
-    await conn.query('START TRANSACTION');
-    const result = await conn.query(
-      'insert into `recieved` (`by`, `to`, `message`, `type`, `role`, `identification`) VALUES (?, ?, ?, ?, ?, ?)',
-      [req.body.by, 'all', req.body.message, 'AF', req.body.role, 'faculty'],
-    );
-    await conn.query('COMMIT');
-    res.status(200).json({
-      result,
-    });
-  } catch (err) {
-    res.status(500).json({
-      error: err,
-    });
-  } finally {
-    await conn.release();
-    await conn.destroy();
-  }
-});
 module.exports = router;
