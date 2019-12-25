@@ -1,7 +1,25 @@
 const express = require('express');
-const db = require('../dbConnection');
 
+const db = require('../dbConnection');
+const NotificationSender = require('./notificationSender');
+
+const Sender = new NotificationSender();
 const router = express.Router();
+
+/*
+  POSSIBLE VALUES FOR IDENTIFICATION
+
+identification = student ||
+                 faculty ||
+                 `${department}_${student/faculty}_${year}_${division}_${batch}`
+*/
+/*
+CREATE TABLE `users`
+( `id` VARCHAR(20) NOT NULL ,
+`password` VARCHAR(20) NOT NULL ,
+`topics` VARCHAR(100) NOT NULL ,
+`token` VARCHAR(200) NOT NULL ) ENGINE = InnoDB;
+*/
 
 
 /**
@@ -110,22 +128,27 @@ router.get('/message/fetch/:identification/:roll', async (req, res) => {
 router.post('/message/send/:identification/individual', async (req, res) => {
   const conn = await db();
   try {
-    await conn.query('START TRANSACTION');
-    const result = await conn.query(
-      'insert into `recieved` (`by`, `to`, `message`, `type`, `role`, `identification`) VALUES (?, ?, ?, ?, ?, ?)',
-      [
-        req.body.by,
-        req.body.to,
-        req.body.message,
-        'individual',
-        req.body.role,
-        req.params.identification,
-      ],
-    );
-    await conn.query('COMMIT');
-    res.status(200).json({
-      result,
-    });
+    const sent = await Sender.sendIndividual(req.body.to, req.body.by, req.body.message);
+    if (sent === true) {
+      await conn.query('START TRANSACTION');
+      const result = await conn.query(
+        'insert into `recieved` (`by`, `to`, `message`, `type`, `role`, `identification`) VALUES (?, ?, ?, ?, ?, ?)',
+        [
+          req.body.by,
+          req.body.to,
+          req.body.message,
+          'individual',
+          req.body.role,
+          req.params.identification,
+        ],
+      );
+      await conn.query('COMMIT');
+      res.status(200).json({
+        result,
+      });
+    } else {
+      res.status(500).send(sent);
+    }
   } catch (err) {
     res.status(500).json({
       error: err,
@@ -194,18 +217,27 @@ router.post('/message/send/:identification/all', async (req, res) => {
 router.post('/message/send/:identifiction/multiple', async (req, res) => {
   const conn = await db();
   try {
-    await conn.query('START TRANSACTION');
-    let query = 'insert into `recieved` (`by`, `to`, `message`, `type`, `role`, `identification`) VALUES ';
-    for (let i = 0; i < req.body.to.length; i += 1) {
+    const to = JSON.parse(req.body.to);
+    const sent = await Sender.sendMultiple(to, req.body.by, req.body.message);
+
+    if (sent) {
+      await conn.query('START TRANSACTION');
+      let query = 'insert into `recieved` (`by`, `to`, `message`, `type`, `role`, `identification`) VALUES ';
+      for (let i = 0; i < to.length; i += 1) {
       // eslint-disable-next-line no-template-curly-in-string
-      query += `('${req.body.by}', '${req.body.to[i]}', '${req.body.message}','multiple', '${req.body.role}','${req.params.identification}'), `;
+        query += `('${req.body.by}', '${to[i]}', '${req.body.message}','multiple', '${req.body.role}','${req.params.identification}'), `;
+      }
+      query = query.replace(/,\s*$/, '');
+
+      const result = await conn.query(query);
+      await conn.query('COMMIT');
+
+      res.status(200).json({
+        result,
+      });
+    } else {
+      res.status(500).send(sent);
     }
-    query = query.replace(/,\s*$/, '');
-    const result = await conn.query(query);
-    await conn.query('COMMIT');
-    res.status(200).json({
-      result,
-    });
   } catch (err) {
     res.status(500).json({
       error: err,

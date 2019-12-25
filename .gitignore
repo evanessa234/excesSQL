@@ -106,3 +106,4 @@ dist
 
 # custom
 config.js
+firebaseConfig.json
