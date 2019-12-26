@@ -107,30 +107,34 @@ router.get('/message/fetch/:identification/all', async (req, res) => {
 
 
 /**
- * Fetch all messages for respective `id (roll or sdrn)`
+ * Fetch all messages for respective role(student or faculty) `id`
  * type: GET
  * query params = []
  * URL: /message/fetch/:(roll or sdrn)/all
  */
-router.get('/message/fetch/single/:id/all', async (req, res) => {
+router.get('/message/fetch/:role/:id/all', async (req, res) => {
   const conn = await db();
   try {
+    let who = '';
+    if (req.params.role === 'student') who = 'AS';
+    else if (req.params.role === 'faculty') who = 'AF';
+
     await conn.query('START TRANSACTION');
     const resp = await conn.query(
       'select `topics` from `users` where  `id` =  ? ', [req.params.id],
     );
     const topics = resp[0].topics.split('_');
     let val = '';
-    let query = 'select * from `recieved` where identification in (';
-
+    let query = `select * from \`recieved\` where ( identification in ('${who}',`;
     for (let i = 0; i < topics.length; i += 1) {
       if (i === 0) val += `${topics[i]}`;
       else val += `_${topics[i]}`;
 
-      if (i === topics.length - 1) query += `'${val}')`;
+      if (i === topics.length - 1) query += `'${val}'))`;
       else query += `'${val}',`;
     }
-    query += ' ORDER by timestamp DESC';
+    query += ` or (\`to\` like '${req.params.id}') ORDER by timestamp DESC`;
+
     const result = await conn.query(query);
     res.status(200).json({
       result,
