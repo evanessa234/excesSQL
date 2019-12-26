@@ -94,6 +94,33 @@ class Sender {
       return err;
     }
   }
+
+  async sendBatch(to, from, message) {
+    try {
+      // eslint-disable-next-line quotes
+      let condition = "";
+      const topics = to.split('_');
+
+      for (let i = 0; i < topics.length; i += 1) {
+        if (i === topics.length - 1) condition += `'${topics[i]}' in topics`;
+        else condition += `'${topics[i]}' in topics && `;
+      }
+
+      const payload = {
+        notification: {
+          title: `Message from ${from}`,
+          body: message,
+        },
+        condition,
+      };
+
+      return this.admin.messaging().send(payload)
+        .then(() => true)
+        .catch((err) => err);
+    } catch (err) {
+      return err;
+    }
+  }
 }
 
 module.exports = Sender;

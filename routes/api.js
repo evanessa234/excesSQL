@@ -182,15 +182,21 @@ router.post('/message/send/:identification/all', async (req, res) => {
     type = req.params.identification;
   }
   try {
-    await conn.query('START TRANSACTION');
-    const result = await conn.query(
-      'insert into `recieved` (`by`, `to`, `message`, `type`, `role`, `identification`) VALUES (?, ?, ?, ?, ?, ?)',
-      [req.body.by, `all${req.params.identification}`, req.body.message, type, req.body.role, req.params.identification],
-    );
-    await conn.query('COMMIT');
-    res.status(200).json({
-      result,
-    });
+    const sent = await Sender.sendBatch(req.params.identification, req.body.by, req.body.message);
+
+    if (sent) {
+      await conn.query('START TRANSACTION');
+      const result = await conn.query(
+        'insert into `recieved` (`by`, `to`, `message`, `type`, `role`, `identification`) VALUES (?, ?, ?, ?, ?, ?)',
+        [req.body.by, `all_${req.params.identification}`, req.body.message, type, req.body.role, req.params.identification],
+      );
+      await conn.query('COMMIT');
+      res.status(200).json({
+        result,
+      });
+    } else {
+      res.status(500).send(sent);
+    }
   } catch (err) {
     res.status(500).json({
       error: err,
@@ -214,7 +220,7 @@ router.post('/message/send/:identification/all', async (req, res) => {
  *
  * URL: /message/send/:identification/multiple
  */
-router.post('/message/send/:identifiction/multiple', async (req, res) => {
+router.post('/message/send/:identification/multiple', async (req, res) => {
   const conn = await db();
   try {
     const to = JSON.parse(req.body.to);
