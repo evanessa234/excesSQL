@@ -82,7 +82,7 @@ router.get('/message/history/:sdrn', async (req, res) => {
  * Fetch all messages for respective `identification`
  * type: GET
  * query params = []
- * URL: /message/fetch/:identification/:(roll or sdrn)
+ * URL: /message/fetch/:identification/all
  */
 router.get('/message/fetch/:identification/all', async (req, res) => {
   const conn = await db();
@@ -110,7 +110,7 @@ router.get('/message/fetch/:identification/all', async (req, res) => {
  * Fetch all messages for respective role(student or faculty) `id`
  * type: GET
  * query params = []
- * URL: /message/fetch/:(roll or sdrn)/all
+ * URL: /message/fetch/:(student or faculty)/:(roll or sdrn)/all
  */
 router.get('/message/fetch/:role/:id/all', async (req, res) => {
   const conn = await db();
@@ -290,5 +290,71 @@ router.post('/message/send/:identification/multiple', async (req, res) => {
     await conn.destroy();
   }
 });
+
+/**
+ * create new user
+ * type: POST
+ * query params = {
+ * id: 'sdrn or roll no',
+ * password: 'password',
+ * topics:'topics to subscribe to ${department}_${student/faculty}_${year}...',
+ * token: 'FCM registration token of the last device the user logged in from,
+ *  }
+ *
+ * URL: /createUser
+ */
+router.post('/createUser', async (req, res) => {
+  const conn = await db();
+  try {
+    await conn.query('START TRANSACTION');
+    const result = await conn.query('insert into `users` (`id`, `password`, `topics`, `token`) VALUES (?, ?, ?, ?)',
+      [req.body.id, req.body.password, req.body.topics, req.body.token]);
+    await conn.query('COMMIT');
+
+    res.status(200).json({
+      result,
+    });
+  } catch (err) {
+    res.status(500).send(err);
+  } finally {
+    await conn.release();
+    await conn.destroy();
+  }
+});
+/**
+ * Update existing user token
+ * to be called whenever user logs out or logs in from new device or token is refreshed
+ * type: POST
+ * query params = {
+ * id: 'sdrn or roll no',
+ * newtoken: 'FCM registration token of the last device the user logged in from,
+ *  }
+ *
+ * URL: /createUser
+ */
+router.post('/updateToken', async (req, res) => {
+  const conn = await db();
+  try {
+    await conn.query('START TRANSACTION');
+    const old = await conn.query(`select * from \`users\` where \`id\` = '${req.body.id}'`);
+    const oldToken = old[0].token;
+    /*
+        SEND FCM DATA MESSAGE FOR LOGGING OUT USING OLD TOKEN HERE
+    */
+
+    const result = await conn.query(`update \`users\` set \`token\` = '${req.body.newtoken}' where \`id\` = '${req.body.id}' `);
+    await conn.query('COMMIT');
+
+    res.status(200).json({
+      result,
+    });
+  } catch (err) {
+    res.status(500).send(err);
+  } finally {
+    await conn.release();
+    await conn.destroy();
+  }
+});
+
 
 module.exports = router;
