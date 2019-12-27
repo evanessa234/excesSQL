@@ -296,6 +296,7 @@ router.post('/message/send/:identification/multiple', async (req, res) => {
  * type: POST
  * query params = {
  * id: 'sdrn or roll no',
+ * role: 'student || faculty || HOD || Principal,
  * password: 'password',
  * topics:'topics to subscribe to ${department}_${student/faculty}_${year}...',
  * token: 'FCM registration token of the last device the user logged in from,
@@ -306,9 +307,10 @@ router.post('/message/send/:identification/multiple', async (req, res) => {
 router.post('/createUser', async (req, res) => {
   const conn = await db();
   try {
+    const name = req.body.name ? req.body.name : '';
     await conn.query('START TRANSACTION');
-    const result = await conn.query('insert into `users` (`id`, `password`, `topics`, `token`) VALUES (?, ?, ?, ?)',
-      [req.body.id, req.body.password, req.body.topics, req.body.token]);
+    const result = await conn.query('insert into `users` (`id`, `name`,`role`, `password`, `topics`, `token`) VALUES (?, ?, ?, ?, ?, ?)',
+      [req.body.id, name, req.body.role, req.body.password, req.body.topics, req.body.token]);
     await conn.query('COMMIT');
 
     res.status(200).json({
@@ -330,7 +332,7 @@ router.post('/createUser', async (req, res) => {
  * newtoken: 'FCM registration token of the last device the user logged in from,
  *  }
  *
- * URL: /createUser
+ * URL: /updateToken
  */
 router.post('/updateToken', async (req, res) => {
   const conn = await db();
