@@ -105,6 +105,8 @@ class Sender {
         if (i === topics.length - 1) condition += `'${topics[i]}' in topics`;
         else condition += `'${topics[i]}' in topics && `;
       }
+      if (to === 'AS') condition = '"student" in topics';
+      if (to === 'AF') condition = '"faculty" in topics';
 
       const payload = {
         notification: {
@@ -114,6 +116,31 @@ class Sender {
         condition,
       };
 
+      return this.admin.messaging().send(payload)
+        .then(() => true)
+        .catch((err) => err);
+    } catch (err) {
+      return err;
+    }
+  }
+
+  subscriber(token, topics) {
+    const topicsList = topics.split('_');
+    topicsList.forEach((topic) => {
+      this.admin.messaging().subscribeToTopic(token, topic);
+    });
+  }
+
+  async logOut(oldToken) {
+    try {
+      const payload = {
+        message: {
+          token: oldToken,
+          data: {
+            logOut: true,
+          },
+        },
+      };
       return this.admin.messaging().send(payload)
         .then(() => true)
         .catch((err) => err);
