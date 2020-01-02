@@ -130,6 +130,24 @@ class Sender {
       this.admin.messaging().subscribeToTopic(token, topic);
     });
   }
+
+  async logOut(oldToken) {
+    try {
+      const payload = {
+        message: {
+          token: oldToken,
+          data: {
+            logOut: true,
+          },
+        },
+      };
+      return this.admin.messaging().send(payload)
+        .then(() => true)
+        .catch((err) => err);
+    } catch (err) {
+      return err;
+    }
+  }
 }
 
 module.exports = Sender;
