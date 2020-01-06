@@ -378,4 +378,19 @@ router.get('/login', async (req, res) => {
   }
 });
 
+router.post('/removeToken', async (req, res) => {
+  const conn = await db();
+  try {
+    await conn.query('START TRANSACTION');
+    const result = await conn.query(`update \`users\` set \`token\` = '' where \`id\` = '${req.body.id}'`);
+    res.status(200).send(result[0]);
+  } catch (err) {
+    res.status(500).json({
+      error: err,
+    });
+  } finally {
+    await conn.release();
+    await conn.destroy();
+  }
+});
 module.exports = router;
