@@ -125,7 +125,8 @@ router.get('/message/fetch/:role/:id/all', async (req, res) => {
     );
     const topics = resp[0].topics.split('_');
     let val = '';
-    let query = `select * from \`recieved\` where ( identification in ('${who}',`;
+    let query = '';
+    query = `select * from \`recieved\` where ( identification in ('${who}',`;
     for (let i = 0; i < topics.length; i += 1) {
       if (i === 0) val += `${topics[i]}`;
       else val += `_${topics[i]}`;
@@ -134,7 +135,9 @@ router.get('/message/fetch/:role/:id/all', async (req, res) => {
       else query += `'${val}',`;
     }
     query += ` or (\`to\` like '${req.params.id}') ORDER by timestamp DESC`;
+    if (req.params.role === 'HOD') query = 'select * from `recieved` ';
 
+    console.log(query);
     const result = await conn.query(query);
     res.status(200).json({
       result,
@@ -165,7 +168,7 @@ router.get('/message/fetch/:role/:id/all', async (req, res) => {
 router.post('/message/send/:identification/individual', async (req, res) => {
   const conn = await db();
   try {
-    const sent = await Sender.sendIndividual(req.body.to, req.body.name, req.body.message);
+    const sent = await Sender.sendIndividual(req.body.to, req.body.by, req.body.message);
     if (sent === true) {
       await conn.query('START TRANSACTION');
       const result = await conn.query(
@@ -219,7 +222,7 @@ router.post('/message/send/:identification/all', async (req, res) => {
     type = req.params.identification;
   }
   try {
-    const sent = await Sender.sendBatch(req.params.identification, req.body.name, req.body.message);
+    const sent = await Sender.sendBatch(req.params.identification, req.body.by, req.body.message);
 
     if (sent) {
       await conn.query('START TRANSACTION');
@@ -261,7 +264,7 @@ router.post('/message/send/:identification/multiple', async (req, res) => {
   const conn = await db();
   try {
     const to = JSON.parse(req.body.to);
-    const sent = await Sender.sendMultiple(to, req.body.name, req.body.message);
+    const sent = await Sender.sendMultiple(to, req.body.by, req.body.message);
 
     if (sent) {
       await conn.query('START TRANSACTION');
@@ -349,6 +352,7 @@ router.post('/updateToken', async (req, res) => {
 
     res.status(200).send(result);
   } catch (err) {
+    console.log(err);
     res.status(500).send(err);
   } finally {
     await conn.release();
@@ -356,12 +360,13 @@ router.post('/updateToken', async (req, res) => {
   }
 });
 
-router.get('/login', async (req, res) => {
+router.get('/login/:id/:password', async (req, res) => {
   const conn = await db();
   try {
+    console.log(req.query);
     await conn.query('START TRANSACTION');
-    const result = await conn.query('select * from `users` where `id` = ?', [req.body.id]);
-    if (result[0].password === req.body.password) {
+    const result = await conn.query('select * from `users` where `id` = ?', [req.params.id]);
+    if (result[0].password === req.params.password) {
       res.status(200).send(result[0]);
     } else {
       res.status(500).send({
