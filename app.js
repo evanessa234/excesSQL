@@ -8,7 +8,7 @@ const indexRouter = require('./routes/index');
 const authRoutes = require('./routes/authRoutes');
 const sendMessageRoutes = require('./routes/sendMessageRoutes');
 const fetchMessageRoutes = require('./routes/fetchMessageRoutes');
-
+const bonafide = require('./routes/bonofide');
 
 const app = express();
 
@@ -27,6 +27,7 @@ app.use('/', indexRouter);
 app.use('/api', authRoutes);
 app.use('/api', sendMessageRoutes);
 app.use('/api', fetchMessageRoutes);
+app.use('/api', bonafide);
 
 // catch 404 and forward to error handler
 app.use((req, res) => {

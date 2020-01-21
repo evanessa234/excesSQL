@@ -24,5 +24,21 @@
     "nodemon": "^2.0.2",
     "promise-mysql": "^4.1.1",
     "uglify-js": "2.6.0"
-  }
+  },
+  "description": "Fully asynchronous REST API written for the RAIT notification system in Nodejs using expressjs and promise-sql",
+  "main": "app.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meta-boy/excesSQL.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/meta-boy/excesSQL/issues"
+  },
+  "homepage": "https://github.com/meta-boy/excesSQL#readme"
 }
