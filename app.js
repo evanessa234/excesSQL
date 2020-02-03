@@ -8,7 +8,9 @@ const indexRouter = require('./routes/index');
 const authRoutes = require('./routes/authRoutes');
 const sendMessageRoutes = require('./routes/sendMessageRoutes');
 const fetchMessageRoutes = require('./routes/fetchMessageRoutes');
-const bonafide = require('./routes/bonofide');
+const bonofide = require('./routes/bonofide');
+const attendance = require('./routes/attendance');
+const termtest = require('./routes/test');
 
 const app = express();
 
@@ -27,7 +29,13 @@ app.use('/', indexRouter);
 app.use('/api', authRoutes);
 app.use('/api', sendMessageRoutes);
 app.use('/api', fetchMessageRoutes);
-app.use('/api', bonafide);
+app.use('/api', bonofide);
+app.use('/api', attendance);
+app.use('/api', termtest);
+
+app.listen(5010, () => {
+  console.log('server is running on port 5010');
+});
 
 // catch 404 and forward to error handler
 app.use((req, res) => {

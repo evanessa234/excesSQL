@@ -6,8 +6,8 @@ const router = express.Router();
 
 router.get('/bonofide', async (req, res) => {
   const { rollNo } = req.body;
+  const conn = await db();
   try {
-    const conn = await db();
     await conn.query('START TRANSACTION');
 
     const result1 = await conn.query('select * from accepted_app where rollno=?', [rollNo]);
@@ -23,34 +23,34 @@ router.get('/bonofide', async (req, res) => {
 
     const result = [];
     if (result1[0]) {
-      console.log('result1');
+      // console.log('result1');
       result.push(result1[0]);
     } else if (result2[0]) {
-      console.log('result2');
+      // console.log('result2');
       result.push(result2[0]);
     } else if (result3[0]) {
-      console.log('result3');
+      // console.log('result3');
       result.push(result3[0]);
     } else if (result4[0]) {
-      console.log('result4');
+      // console.log('result4');
       result.push(result4[0]);
     } else if (result5[0]) {
-      console.log('result5');
+      // console.log('result5');
       result.push(result5[0]);
     } else if (result6[0]) {
-      console.log('result6');
+      // console.log('result6');
       result.push(result6[0]);
     } else if (result7[0]) {
-      console.log('result7');
+      // console.log('result7');
       result.push(result7[0]);
     } else if (result8[0]) {
-      console.log('result8');
+      // console.log('result8');
       result.push(result8[0]);
     } else if (result9[0]) {
-      console.log('result9');
+      // console.log('result9');
       result.push(result9[0]);
     } else if (result10[0]) {
-      console.log('result10');
+      // console.log('result10');
       result.push(result10[0]);
     }
 
@@ -70,5 +70,4 @@ router.get('/bonofide', async (req, res) => {
     await conn.destroy();
   }
 });
-
 module.exports = router;
