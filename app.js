@@ -3,14 +3,13 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 
-const indexRouter = require('./routes/index');
+
 // const apiRouter = require('./routes/api');
 const authRoutes = require('./routes/authRoutes');
 const sendMessageRoutes = require('./routes/sendMessageRoutes');
 const fetchMessageRoutes = require('./routes/fetchMessageRoutes');
-const bonofide = require('./routes/bonofide');
-const attendance = require('./routes/attendance');
-const termtest = require('./routes/test');
+const userRouter = require('./routes/router');
+
 
 const app = express();
 
@@ -25,15 +24,14 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
 app.use('/api', authRoutes);
 app.use('/api', sendMessageRoutes);
 app.use('/api', fetchMessageRoutes);
-app.use('/api', bonofide);
-app.use('/api', attendance);
-app.use('/api', termtest);
+app.use('/api', userRouter);
+
 
 app.listen(5010, () => {
+  // eslint-disable-next-line no-console
   console.log('server is running on port 5010');
 });
 
